@@ -5,11 +5,25 @@ services:
     security_opt:
       - no-new-privileges:true
     sysctls:
-      - net.ipv4.ip_unprivileged_port_start=1024
+      net.ipv4.ip_unprivileged_port_start: 1024
     restart: unless-stopped
     # All labels are defined in the template: docker-compose.instance.yaml
     labels: []
     environment:
-      - EULA=TRUE
+      TYPE: PAPER
+      EULA: "true"
+      MEMORY: 4G
+      OPS: Jtmonkeyboy1
+      WHITELIST: "True"
+      ENFORCE_WHITELIST: "True"
+      LEVEL: OzzyCraft
+      VERSION: "1.21.6"
+      OVERRIDE_SERVER_PROPERTIES: "TRUE"
+      VIEW_DISTANCE: 22
+      MOTD: "\u00A73OzzyCraft\u00A7r\n\u00A7aDream a land worth \u00A7d\u00A7nliving"
+    mem_limit: 6g
+    mem_reservation: 2g
     ports:
       - "25565:25565"
+    volumes:
+      - ./OzzyVol/data:/data
