@@ -1,27 +1,33 @@
 services:
   minecraft:
-    # Docker image is configurable per config file:
+    container_name: ozzycraft
     image: ${MINECRAFT_IMAGE}
     security_opt:
       - no-new-privileges:true
     sysctls:
       net.ipv4.ip_unprivileged_port_start: 1024
     restart: unless-stopped
+    tty: true
+    stdin_open: true
     # All labels are defined in the template: docker-compose.instance.yaml
     labels: []
     environment:
+      TERM: xterm-256color
       TYPE: PAPER
       EULA: "true"
       MEMORY: 4G
-      OPS: Jtmonkeyboy1
+      OPS: "Jtmonkeyboy1,SparklyOcean,BenBunk08,BIGHOSS790,VCDragoon,ObamaGamingTM,CrazyOldTurtl3"
       WHITELIST: "True"
       ENFORCE_WHITELIST: "True"
       LEVEL: OzzyCraft
-      VERSION: "1.21.6"
+      ENABLE_BACKUPS: "True"
+      VERSION: "1.21.11"
       OVERRIDE_SERVER_PROPERTIES: "TRUE"
       VIEW_DISTANCE: 22
       MOTD: "\u00A73OzzyCraft\u00A7r\n\u00A7aDream a land worth \u00A7d\u00A7nliving"
-    mem_limit: 6g
+      INIT_MEMORY: 4G
+      MAX_MEMORY: 9G
+    mem_limit: 10g
     mem_reservation: 2g
     ports:
       - "25565:25565"

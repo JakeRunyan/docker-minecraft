@@ -1,39 +1,81 @@
-ROOT_DIR = ~/git/vendor/enigmacurry/d.rymcg.tech
-include ${ROOT_DIR}/_scripts/Makefile.projects
-include ${ROOT_DIR}/_scripts/Makefile.instance
+# Colors
+RED=\033[0;31m
+GREEN=\033[0;32m
+YELLOW=\033[0;33m
+BLUE=\033[0;34m
+CYAN=\033[0;36m
+NC=\033[0m
 
-.PHONY: config-hook
-config-hook:
-#### This interactive configuration wizard creates the .env_{DOCKER_CONTEXT}_{INSTANCE} config file using .env-dist as the template:
-#### reconfigure_ask asks the user a question to set the variable into the .env file, and with a provided default value.
-#### reconfigure sets the value of a variable in the .env file without asking.
-#### reconfigure_htpasswd will configure the HTTP Basic Authentication setting the var name and with a provided default value.
-	@${BIN}/reconfigure ${ENV_FILE} MINECRAFT_INSTANCE=$${instance:-default}
-	@echo ""
+.DEFAULT_GOAL := help
+SERVER=root@192.168.1.224:/home/jtmonkeyboy/git/vendor/jakerunyan/ozzyCraft/OzzyVol/data/
+LOCAL=./OzzyVol/data/
 
-.PHONY: override-hook
-override-hook:
-#### This sets the override template variables for docker-compose.instance.yaml:
-#### The template dynamically renders to docker-compose.override_{DOCKER_CONTEXT}_{INSTANCE}.yaml
-#### These settings are used to automatically generate the service container labels, and traefik config, inside the template.
-#### The variable arguments have three forms: `=` `=:` `=@`
-####   name=VARIABLE_NAME    # sets the template 'name' field to the value of VARIABLE_NAME found in the .env file
-####                         # (this hardcodes the value into docker-compose.override.yaml)
-####   name=:VARIABLE_NAME   # sets the template 'name' field to the literal string 'VARIABLE_NAME'
-####                         # (this hardcodes the string into docker-compose.override.yaml)
-####   name=@VARIABLE_NAME   # sets the template 'name' field to the literal string '${VARIABLE_NAME}'
-####                         # (used for regular docker-compose expansion of env vars by name.)
-	@${BIN}/docker_compose_override ${ENV_FILE} project=:minecraft instance=@MINECRAFT_INSTANCE
 
-.PHONY: shell # Enter container shell
-shell:
-	@make --no-print-directory docker-compose-shell SERVICE=minecraft
+.PHONY: help
+help: ## [General] Show this help
+	@printf "$(CYAN)Usage:$(NC)\n  make <target> [VAR=value]\n\n"
+	@gawk 'BEGIN { \
+		FS=":.*## "; \
+		want[1]="General"; \
+		want[2]="Docker"; \
+		want[3]="Sync"; \
+		want[4]="Dev"; \
+		want[5]="Other"; \
+		printf "$(CYAN)Targets:$(NC)\n"; \
+	} \
+	/^[a-zA-Z0-9_.-]+:.*## / { \
+		target=$$1; desc=$$2; \
+		category="Other"; \
+		if (match(desc, /^\[[^]]+\]/)) { \
+			category=substr(desc, RSTART+1, RLENGTH-2); \
+			desc=substr(desc, RLENGTH+2); \
+		} \
+		items[category]=items[category] sprintf("  $(GREEN)%-18s$(NC) %s\n", target, desc); \
+		seen[category]=1; \
+	} \
+	END { \
+		# 1) print categories in want[] order \
+		for (i=1; i in want; i++) { \
+			c=want[i]; \
+			if (c in seen) { \
+				printf "\n%s:\n%s", c, items[c]; \
+				printed[c]=1; \
+			} \
+		} \
+		# 2) print any categories not listed in want[] \
+		for (c in items) { \
+			if (!(c in printed)) { \
+				printf "\n%s:\n%s", c, items[c]; \
+			} \
+		} \
+	}' $(MAKEFILE_LIST)
 
-.PHONY: install-hook
-install-hook:
-	@echo
+start: ## [Docker] Start the container
+	docker compose up -d
 
-.PHONY: install-hook-pre
-install-hook-pre:
-	@echo
+stop: ## [Docker] Stops the container and server
+	docker compose down
 
+run: ## [Docker] Start the container and get into the console
+	@printf "$(CYAN)To get out of the console: ctrl p + q$(NC)\n"
+	docker compose up -d && docker compose attach minecraft
+
+console: ## [Docker] Get into the console
+	@printf "$(CYAN)To get out of the console: ctrl p + q$(NC)\n"
+	docker compose attach minecraft
+
+push: ## [Sync] Local -> Server
+	rsync -av --delete \
+	$(LOCAL) \
+	$(SERVER)
+
+pull: ## [Sync] Server -> Local
+	rsync -av --delete \
+	$(SERVER) \
+	$(LOCAL)
+
+shell: ## [Dev] Get into the server files
+	docker compose exec minecraft bash
+
+command: ## [Dev] Send a single command to the shell
+	docker compose exec minecraft $(cmd)
